@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import ir.sabtnamyar.app.util.Http
 import kotlinx.coroutines.Dispatchers
@@ -27,19 +28,36 @@ import kotlinx.coroutines.withContext
 private val memoryCache = mutableMapOf<String, Bitmap>()
 
 /**
- * نمایش تصویر راهنما بدون کتابخانه بیرونی؛ تصویر از نشانی اینترنتی دریافت و
- * در حافظه نگه‌داری می‌شود. در صورت نبود تصویر چیزی نمایش داده نمی‌شود.
+ * نمایش تصویر راهنما.
+ * - نشانی اینترنتی (http/https): دریافت و کش‌شدن در حافظه
+ * - نشانی محلی با پیشوند asset: از پوشه assets بارگذاری می‌شود
+ * - خالی: هیچ نمایش داده نمی‌شود
  */
 @Composable
 fun StepImage(url: String, modifier: Modifier = Modifier) {
     if (url.isBlank()) return
+    val context = LocalContext.current
     var bitmap by remember(url) { mutableStateOf(memoryCache[url]) }
 
     LaunchedEffect(url) {
         if (bitmap == null) {
             val loaded = withContext(Dispatchers.IO) {
-                Http.getBytes(url)?.let { bytes ->
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                try {
+                    when {
+                        url.startsWith("asset:") -> {
+                            context.assets.open(url.removePrefix("asset:")).use { stream ->
+                                BitmapFactory.decodeStream(stream)
+                            }
+                        }
+                        url.startsWith("http") -> {
+                            Http.getBytes(url)?.let { bytes ->
+                                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            }
+                        }
+                        else -> null
+                    }
+                } catch (_: Exception) {
+                    null
                 }
             }
             if (loaded != null) {
@@ -66,7 +84,7 @@ fun StepImage(url: String, modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "در حال دریافت تصویر…",
+                "در حال بارگذاری تصویر…",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

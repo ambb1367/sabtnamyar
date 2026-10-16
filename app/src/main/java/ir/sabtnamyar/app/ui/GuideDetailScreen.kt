@@ -75,6 +75,12 @@ fun GuideDetailScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (guide.media.isNotBlank()) {
+                item {
+                    StepImage(guide.media, modifier = Modifier.clip(RoundedCornerShape(16.dp)))
+                }
+            }
+
             item { Header(guide) }
 
             if (guide.requirements.isNotEmpty()) {
@@ -191,7 +197,7 @@ private fun RequirementsCard(items: List<String>) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text("پیش‌نیازها", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text("مدارک و پیش‌نیازها", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Spacer(Modifier.padding(top = 6.dp))
             for (item in items) {
                 Row(modifier = Modifier.padding(vertical = 3.dp)) {
