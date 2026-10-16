@@ -11,8 +11,8 @@ android {
         applicationId = "ir.sabtnamyar.app"
         minSdk = 21
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.0.5"
+        versionCode = 1
+        versionName = "1.0.0"
         resourceConfigurations += listOf("fa", "en")
         vectorDrawables { useSupportLibrary = true }
     }
