@@ -1,7 +1,7 @@
 package ir.sabtnamyar.app.util
 
 /**
- * تبدیل تاریخ میلادی به شمسی (الگوریتم jalaali) برای نمایش تاریخ آخرین به‌روزرسانی.
+ * تبدیل تاریخ میلادی به شمسی با الگوریتم استاندارد (jalaali-js)
  */
 object PersianDate {
 
@@ -10,35 +10,47 @@ object PersianDate {
         1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178
     )
 
+    private data class JalCal(val leap: Int, val march: Int)
+
     fun fromEpochMillis(millis: Long): String {
         if (millis <= 0L) return ""
         val cal = java.util.Calendar.getInstance()
         cal.timeInMillis = millis
-        val (jy, jm, jd) = fromGregorian(
-            cal.get(java.util.Calendar.YEAR),
-            cal.get(java.util.Calendar.MONTH) + 1,
-            cal.get(java.util.Calendar.DAY_OF_MONTH)
-        )
+        val gy = cal.get(java.util.Calendar.YEAR)
+        val gm = cal.get(java.util.Calendar.MONTH) + 1
+        val gd = cal.get(java.util.Calendar.DAY_OF_MONTH)
+        val (jy, jm, jd) = toJalali(gy, gm, gd)
         return "$jd ${monthName(jm)} $jy"
     }
 
     private fun monthName(m: Int): String = when (m) {
-        1 -> "فروردین"; 2 -> "اردیبهشت"; 3 -> "خرداد"; 4 -> "تیر"
-        5 -> "مرداد"; 6 -> "شهریور"; 7 -> "مهر"; 8 -> "آبان"
-        9 -> "آذر"; 10 -> "دی"; 11 -> "بهمن"; else -> "اسفند"
+        1 -> "فروردین"
+        2 -> "اردیبهشت"
+        3 -> "خرداد"
+        4 -> "تیر"
+        5 -> "مرداد"
+        6 -> "شهریور"
+        7 -> "مهر"
+        8 -> "آبان"
+        9 -> "آذر"
+        10 -> "دی"
+        11 -> "بهمن"
+        else -> "اسفند"
     }
 
-    private data class JalCal(val leap: Int, val march: Int)
-
-    private fun fromGregorian(gy: Int, gm: Int, gd: Int): Triple<Int, Int, Int> {
+    private fun toJalali(gy: Int, gm: Int, gd: Int): Triple<Int, Int, Int> {
         val jdn = g2d(gy, gm, gd)
-        var jy = d2g(jdn).first - 621
-        val r = jalCal(jy)
-        val jdn1f = g2d(d2g(jdn).first, 3, r.march)
+        val gy2 = d2g(jdn).first
+        var jy = gy2 - 621
+        val r = jalCal(jy, gy2)
+        val jdn1f = g2d(gy2, 3, r.march)
         var k = jdn - jdn1f
-        if (k in 0..185) return Triple(jy, 1 + div(k, 31), mod(k, 31) + 1)
         if (k >= 0) {
-            k -= 186
+            if (k <= 185) {
+                return Triple(jy, 1 + div(k, 31), mod(k, 31) + 1)
+            } else {
+                k -= 186
+            }
         } else {
             jy -= 1
             k += 179
@@ -47,9 +59,8 @@ object PersianDate {
         return Triple(jy, 7 + div(k, 30), mod(k, 30) + 1)
     }
 
-    private fun jalCal(jy: Int): JalCal {
+    private fun jalCal(jy: Int, gy2: Int): JalCal {
         val bl = breaks.size
-        val gy = jy + 621
         var leapJ = -14
         var jp = breaks[0]
         var jump = 0
@@ -63,7 +74,7 @@ object PersianDate {
         var n = jy - jp
         leapJ += div(n, 33) * 8 + div(mod(n, 33) + 3, 4)
         if (mod(jump, 33) == 4 && jump - n == 4) leapJ += 1
-        val leapG = div(gy, 4) - div((div(gy, 100) + 1) * 3, 4) - 150
+        val leapG = div(gy2, 4) - div((div(gy2, 100) + 1) * 3, 4) - 150
         val march = 20 + leapJ - leapG
         if (jump - n < 6) n = n - jump + div(jump + 4, 33) * 33
         var leap = mod(mod(n + 1, 33) - 1, 4)
@@ -86,6 +97,5 @@ object PersianDate {
     }
 
     private fun div(a: Int, b: Int): Int = Math.floor(a.toDouble() / b).toInt()
-
     private fun mod(a: Int, b: Int): Int = a - Math.floor(a.toDouble() / b).toInt() * b
 }
